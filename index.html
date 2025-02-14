@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comandinha - Controle suas contas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+                    <!-- Caderneta (capa) -->
+                    <path 
+                        d="M40 40 L140 40 L140 160 L40 160 Z" 
+                        fill="none" 
+                        stroke="#FF6B6B" 
+                        stroke-width="8"
+                    />
+                    
+                    <!-- Espiral da caderneta -->
+                    <path 
+                        d="M35 55 C45 55, 45 65, 35 65 M35 75 C45 75, 45 85, 35 85 M35 95 C45 95, 45 105, 35 105 M35 115 C45 115, 45 125, 35 125 M35 135 C45 135, 45 145, 35 145" 
+                        fill="none"
+                        stroke="#FF6B6B" 
+                        stroke-width="4"
+                    />
+                    
+                    <!-- Linhas da caderneta -->
+                    <path 
+                        d="M60 70 L120 70 M60 90 L120 90 M60 110 L120 110 M60 130 L120 130" 
+                        stroke="#4ECDC4" 
+                        stroke-width="3"
+                        stroke-linecap="round"
+                    />
+                    
+                    <!-- Símbolo R$ -->
+                    <path 
+                        d="M155 80 L155 140 M145 85 L165 85" 
+                        stroke="#FF6B6B" 
+                        stroke-width="8" 
+                        stroke-linecap="round"
+                    />
+                    <path 
+                        d="M142 95 L158 95" 
+                        stroke="#FF6B6B" 
+                        stroke-width="8" 
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </div>
+            <h1>Comandinha</h1>
+            <p>Controle suas contas em bares e restaurantes</p>
+        </div>
+
+        <div class="input-group">
+            <input type="text" id="itemName" placeholder="Nome do produto">
+            <input type="number" id="itemPrice" placeholder="Preço R$" step="0.01">
+            <button onclick="addItem()">Adicionar</button>
+        </div>
+
+        <div class="items-list" id="itemsList"></div>
+
+        <div class="input-group">
+            <input type="number" id="couvert" placeholder="Valor do Couvert R$" step="0.01">
+            <input type="number" id="people" placeholder="Número de pessoas" min="1">
+        </div>
+
+        <div class="summary" id="summary"></div>
+    </div>
+
+    <script>
+        let items = JSON.parse(localStorage.getItem('comandinhaItems')) || [];
+        
+        function saveToLocalStorage() {
+            localStorage.setItem('comandinhaItems', JSON.stringify(items));
+        }
+
+        function addItem() {
+            const name = document.getElementById('itemName').value;
+            const price = parseFloat(document.getElementById('itemPrice').value);
+
+            if (name && price) {
+                items.push({
+                    name,
+                    price,
+                    quantity: 1
+                });
+                saveToLocalStorage();
+                updateDisplay();
+                clearInputs();
+            }
+        }
+
+        function incrementItem(index) {
+            items[index].quantity++;
+            saveToLocalStorage();
+            updateDisplay();
+        }
+
+        function decrementItem(index) {
+            if (items[index].quantity > 1) {
+                items[index].quantity--;
+            } else {
+                items.splice(index, 1);
+            }
+            saveToLocalStorage();
+            updateDisplay();
+        }
+
+        function clearInputs() {
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+        }
+
+        function updateDisplay() {
+            const itemsList = document.getElementById('itemsList');
+            const summary = document.getElementById('summary');
+            
+            itemsList.innerHTML = items.map((item, index) => `
+                <div class="item">
+                    <span>${item.name} - R$ ${item.price.toFixed(2)}</span>
+                    <div class="item-controls">
+                        <span>x${item.quantity}</span>
+                        <button onclick="decrementItem(${index})">-</button>
+                        <button onclick="incrementItem(${index})">+</button>
+                    </div>
+                </div>
+            `).join('');
+
+            const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const couvert = parseFloat(document.getElementById('couvert').value) || 0;
+            const service = subtotal * 0.1;
+            const total = subtotal + couvert + service;
+            const people = parseInt(document.getElementById('people').value) || 1;
+            const perPerson = total / people;
+
+            summary.innerHTML = `
+                <div class="summary-item">
+                    <span>Subtotal:</span>
+                    <span>R$ ${subtotal.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Couvert Artístico:</span>
+                    <span>R$ ${couvert.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Taxa de Serviço (10%):</span>
+                    <span>R$ ${service.toFixed(2)}</span>
+                </div>
+                <div class="summary-item total">
+                    <span>Total:</span>
+                    <span>R$ ${total.toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Valor por pessoa (${people} pessoas):</span>
+                    <span>R$ ${perPerson.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        document.getElementById('couvert').addEventListener('input', updateDisplay);
+        document.getElementById('people').addEventListener('input', updateDisplay);
+
+        updateDisplay();
+    </script>
+</body>
+</html>
